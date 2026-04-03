@@ -1,0 +1,123 @@
+{
+  "name": "send-to-copilot-cli",
+  "displayName": "Send to Copilot CLI",
+  "description": "Compose prompts in VS Code and send them to your active Copilot CLI session",
+  "version": "0.0.1",
+  "publisher": "eliostruyf",
+  "license": "MIT",
+  "preview": true,
+  "icon": "assets/logo-128x128.png",
+  "sponsor": {
+    "url": "https://github.com/sponsors/estruyf"
+  },
+  "badges": [
+    {
+      "description": "version",
+      "url": "https://img.shields.io/github/package-json/v/estruyf/send-to-copilot-cli?color=green&label=send-to-copilot-cli&style=flat-square",
+      "href": "https://github.com/estruyf/send-to-copilot-cli"
+    },
+    {
+      "description": "sponsor",
+      "url": "https://img.shields.io/badge/Sponsor-Elio%20Struyf%20%E2%9D%A4-%23fe8e86?logo=GitHub&style=flat-square",
+      "href": "https://github.com/sponsors/estruyf"
+    }
+  ],
+  "galleryBanner": {
+    "color": "#0D1321",
+    "theme": "dark"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/estruyf/send-to-copilot-cli"
+  },
+  "bugs": {
+    "url": "https://github.com/estruyf/send-to-copilot-cli/issues"
+  },
+  "homepage": "https://github.com/estruyf/send-to-copilot-cli",
+  "keywords": [
+    "copilot",
+    "copilot cli",
+    "github copilot",
+    "prompt",
+    "cli",
+    "bridge",
+    "terminal",
+    "send"
+  ],
+  "engines": {
+    "vscode": "^1.110.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "send-to-copilot-cli.sendSelection",
+        "title": "Send to Copilot CLI: Send Selection"
+      },
+      {
+        "command": "send-to-copilot-cli.sendFileContent",
+        "title": "Send to Copilot CLI: Send File Content"
+      },
+      {
+        "command": "send-to-copilot-cli.installBridge",
+        "title": "Send to Copilot CLI: Install Bridge Extension"
+      },
+      {
+        "command": "send-to-copilot-cli.updateBridge",
+        "title": "Send to Copilot CLI: Update Bridge Extension"
+      },
+      {
+        "command": "send-to-copilot-cli.uninstallBridge",
+        "title": "Send to Copilot CLI: Uninstall Bridge Extension"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "send-to-copilot-cli.submenu",
+        "label": "Send to Copilot CLI"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "submenu": "send-to-copilot-cli.submenu",
+          "group": "copilotBridge"
+        }
+      ],
+      "send-to-copilot-cli.submenu": [
+        {
+          "command": "send-to-copilot-cli.sendSelection",
+          "group": "1_send@1"
+        },
+        {
+          "command": "send-to-copilot-cli.sendFileContent",
+          "group": "1_send@2"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.110.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.39.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1"
+  }
+}
