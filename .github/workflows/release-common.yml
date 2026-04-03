@@ -16,16 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: "yarn"
+          cache: "npm"
 
       - name: Install dependencies
-        run: yarn install --immutable
+        run: npm ci
 
       - name: Build
         run: ${{ inputs.build_command }}
