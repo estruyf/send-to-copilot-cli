@@ -9,6 +9,11 @@ const EXTENSION_FILE = "extension.mjs";
 
 type InstallLocation = "global" | "workspace";
 
+export interface BridgeInstallationState {
+  installedCount: number;
+  outdatedCount: number;
+}
+
 function getGlobalExtensionDir(): string {
   return path.join(os.homedir(), ".copilot", "extensions", EXTENSION_NAME);
 }
@@ -177,6 +182,76 @@ async function findInstalled(): Promise<
   }
 
   return found;
+}
+
+export async function getBridgeInstallationState(): Promise<BridgeInstallationState> {
+  const installed = await findInstalled();
+
+  let outdatedCount = 0;
+  for (const { dir } of installed) {
+    const hashPath = path.join(dir, ".hash");
+    const currentHash = await fs.readFile(hashPath, "utf-8").catch(() => "");
+    if (currentHash.trim() !== EXTENSION_HASH) {
+      outdatedCount++;
+    }
+  }
+
+  return {
+    installedCount: installed.length,
+    outdatedCount,
+  };
+}
+
+export async function promptForBridgeInstallOrUpdate(
+  context: vscode.ExtensionContext,
+  outputChannel: vscode.OutputChannel,
+): Promise<void> {
+  const extensionVersion = String(context.extension.packageJSON.version ?? "0");
+  const installPromptKey = `bridge.installPrompt.dismissed.${extensionVersion}`;
+  const updatePromptKey = `bridge.updatePrompt.dismissed.${EXTENSION_HASH}`;
+
+  const state = await getBridgeInstallationState();
+
+  if (state.installedCount === 0) {
+    const installDismissed = context.globalState.get<boolean>(installPromptKey, false);
+    if (installDismissed) {
+      return;
+    }
+
+    const picked = await vscode.window.showInformationMessage(
+      "Install the Copilot CLI bridge extension now to enable sending prompts directly from VS Code?",
+      "Install",
+      "Not now",
+    );
+
+    if (picked === "Install") {
+      await vscode.commands.executeCommand("send-to-copilot-cli.installBridge");
+    } else {
+      await context.globalState.update(installPromptKey, true);
+    }
+
+    return;
+  }
+
+  if (state.outdatedCount > 0) {
+    const updateDismissed = context.globalState.get<boolean>(updatePromptKey, false);
+    if (updateDismissed) {
+      return;
+    }
+
+    const picked = await vscode.window.showInformationMessage(
+      `An updated Copilot CLI bridge extension is available (${state.outdatedCount} location${state.outdatedCount > 1 ? "s" : ""}). Update now?`,
+      "Update",
+      "Not now",
+    );
+
+    if (picked === "Update") {
+      await vscode.commands.executeCommand("send-to-copilot-cli.updateBridge");
+    } else {
+      await context.globalState.update(updatePromptKey, true);
+      outputChannel.appendLine("[Bridge] User postponed bridge update prompt.");
+    }
+  }
 }
 
 export function createInstallBridgeCommand(
