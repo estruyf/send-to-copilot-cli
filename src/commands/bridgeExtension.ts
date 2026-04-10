@@ -213,7 +213,10 @@ export async function promptForBridgeInstallOrUpdate(
   const state = await getBridgeInstallationState();
 
   if (state.installedCount === 0) {
-    const installDismissed = context.globalState.get<boolean>(installPromptKey, false);
+    const installDismissed = context.globalState.get<boolean>(
+      installPromptKey,
+      false,
+    );
     if (installDismissed) {
       return;
     }
@@ -234,7 +237,10 @@ export async function promptForBridgeInstallOrUpdate(
   }
 
   if (state.outdatedCount > 0) {
-    const updateDismissed = context.globalState.get<boolean>(updatePromptKey, false);
+    const updateDismissed = context.globalState.get<boolean>(
+      updatePromptKey,
+      false,
+    );
     if (updateDismissed) {
       return;
     }
