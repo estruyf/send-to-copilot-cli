@@ -18,12 +18,7 @@ function getWorkspaceExtensionDir(): string | undefined {
   if (!folder) {
     return undefined;
   }
-  return path.join(
-    folder.uri.fsPath,
-    ".github",
-    "extensions",
-    EXTENSION_NAME
-  );
+  return path.join(folder.uri.fsPath, ".github", "extensions", EXTENSION_NAME);
 }
 
 function getExtensionDir(location: InstallLocation): string | undefined {
@@ -67,6 +62,10 @@ const session = await joinSession({
         "[vscode-prompt-bridge] VS Code prompt bridge is active. " +
         "Prompts from VS Code will be injected into this session.",
     }),
+    onSessionEnd: async () => {
+      cleanup();
+      return null;
+    },
   },
 });
 
@@ -97,13 +96,23 @@ server.listen(socketPath, () => {
   mkdirSync(BRIDGE_DIR, { recursive: true });
   writeFileSync(
     BRIDGE_FILE,
-    JSON.stringify({ socketPath, pid: process.pid, cwd: process.cwd() }),
+    JSON.stringify({
+      socketPath,
+      pid: process.pid,
+      cwd: process.cwd(),
+      timestamp: Date.now(),
+    }),
     { mode: 0o600 }
   );
   session.log("🔗 VS Code prompt bridge ready");
 });
 
+let cleanedUp = false;
 function cleanup() {
+  if (cleanedUp) {
+    return;
+  }
+  cleanedUp = true;
   try { unlinkSync(BRIDGE_FILE); } catch {}
   server.close();
 }
@@ -171,7 +180,7 @@ async function findInstalled(): Promise<
 }
 
 export function createInstallBridgeCommand(
-  outputChannel: vscode.OutputChannel
+  outputChannel: vscode.OutputChannel,
 ) {
   return async (): Promise<void> => {
     const location = await pickLocation();
@@ -182,7 +191,7 @@ export function createInstallBridgeCommand(
     const dir = getExtensionDir(location);
     if (!dir) {
       vscode.window.showWarningMessage(
-        "No workspace folder open. Open a folder first for workspace install."
+        "No workspace folder open. Open a folder first for workspace install.",
       );
       return;
     }
@@ -191,7 +200,7 @@ export function createInstallBridgeCommand(
       const overwrite = await vscode.window.showWarningMessage(
         `CLI bridge extension already installed at ${location} location. Overwrite?`,
         "Overwrite",
-        "Cancel"
+        "Cancel",
       );
       if (overwrite !== "Overwrite") {
         return;
@@ -203,31 +212,27 @@ export function createInstallBridgeCommand(
       await fs.writeFile(path.join(dir, EXTENSION_FILE), EXTENSION_SOURCE);
       await fs.writeFile(path.join(dir, ".hash"), EXTENSION_HASH);
 
-      outputChannel.appendLine(
-        `[Bridge] Installed CLI extension to ${dir}`
-      );
+      outputChannel.appendLine(`[Bridge] Installed CLI extension to ${dir}`);
       vscode.window.showInformationMessage(
-        `CLI bridge extension installed (${location}). Restart any active CLI sessions to load it.`
+        `CLI bridge extension installed (${location}). Restart any active CLI sessions to load it.`,
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       outputChannel.appendLine(`[Bridge] Install failed: ${msg}`);
       vscode.window.showErrorMessage(
-        `Failed to install CLI bridge extension: ${msg}`
+        `Failed to install CLI bridge extension: ${msg}`,
       );
     }
   };
 }
 
-export function createUpdateBridgeCommand(
-  outputChannel: vscode.OutputChannel
-) {
+export function createUpdateBridgeCommand(outputChannel: vscode.OutputChannel) {
   return async (): Promise<void> => {
     const installed = await findInstalled();
 
     if (installed.length === 0) {
       vscode.window.showWarningMessage(
-        "CLI bridge extension is not installed. Use the install command first."
+        "CLI bridge extension is not installed. Use the install command first.",
       );
       return;
     }
@@ -235,9 +240,7 @@ export function createUpdateBridgeCommand(
     let updated = 0;
     for (const { location, dir } of installed) {
       const hashPath = path.join(dir, ".hash");
-      const currentHash = await fs
-        .readFile(hashPath, "utf-8")
-        .catch(() => "");
+      const currentHash = await fs.readFile(hashPath, "utf-8").catch(() => "");
 
       if (currentHash.trim() === EXTENSION_HASH) {
         continue;
@@ -245,33 +248,31 @@ export function createUpdateBridgeCommand(
 
       await fs.writeFile(path.join(dir, EXTENSION_FILE), EXTENSION_SOURCE);
       await fs.writeFile(hashPath, EXTENSION_HASH);
-      outputChannel.appendLine(
-        `[Bridge] Updated CLI extension at ${dir}`
-      );
+      outputChannel.appendLine(`[Bridge] Updated CLI extension at ${dir}`);
       updated++;
     }
 
     if (updated > 0) {
       vscode.window.showInformationMessage(
-        `CLI bridge extension updated (${updated} location${updated > 1 ? "s" : ""}). Restart any active CLI sessions to pick up changes.`
+        `CLI bridge extension updated (${updated} location${updated > 1 ? "s" : ""}). Restart any active CLI sessions to pick up changes.`,
       );
     } else {
       vscode.window.showInformationMessage(
-        "CLI bridge extension is already up to date."
+        "CLI bridge extension is already up to date.",
       );
     }
   };
 }
 
 export function createUninstallBridgeCommand(
-  outputChannel: vscode.OutputChannel
+  outputChannel: vscode.OutputChannel,
 ) {
   return async (): Promise<void> => {
     const installed = await findInstalled();
 
     if (installed.length === 0) {
       vscode.window.showWarningMessage(
-        "CLI bridge extension is not installed."
+        "CLI bridge extension is not installed.",
       );
       return;
     }
@@ -313,20 +314,18 @@ export function createUninstallBridgeCommand(
       try {
         await fs.rm(dir, { recursive: true, force: true });
         outputChannel.appendLine(
-          `[Bridge] Uninstalled CLI extension from ${dir}`
+          `[Bridge] Uninstalled CLI extension from ${dir}`,
         );
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         outputChannel.appendLine(`[Bridge] Uninstall failed: ${msg}`);
         vscode.window.showErrorMessage(
-          `Failed to uninstall CLI bridge extension: ${msg}`
+          `Failed to uninstall CLI bridge extension: ${msg}`,
         );
         return;
       }
     }
 
-    vscode.window.showInformationMessage(
-      "CLI bridge extension uninstalled."
-    );
+    vscode.window.showInformationMessage("CLI bridge extension uninstalled.");
   };
 }
