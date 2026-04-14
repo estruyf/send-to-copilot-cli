@@ -2,7 +2,7 @@
   "name": "send-to-copilot-cli",
   "displayName": "Send to Copilot CLI",
   "description": "Compose prompts in VS Code and send them to your active Copilot CLI session",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "eliostruyf",
   "license": "MIT",
   "preview": true,
