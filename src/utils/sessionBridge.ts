@@ -107,6 +107,41 @@ function isStaleSocketError(err: NodeJS.ErrnoException): boolean {
   return err.code === "ENOENT" || err.code === "ECONNREFUSED";
 }
 
+async function probeBridgeHealth(bridge: BridgeInfo): Promise<boolean> {
+  return new Promise<boolean>((resolve, reject) => {
+    const req = http.request(
+      {
+        socketPath: bridge.socketPath,
+        path: "/health",
+        method: "GET",
+      },
+      (res) => {
+        let body = "";
+        res.on("data", (chunk: Buffer) => (body += chunk));
+        res.on("end", () => {
+          if (res.statusCode !== 200) {
+            resolve(false);
+            return;
+          }
+
+          try {
+            const result = JSON.parse(body) as { ok?: boolean };
+            resolve(result.ok === true);
+          } catch {
+            resolve(false);
+          }
+        });
+      },
+    );
+
+    req.on("error", (err: NodeJS.ErrnoException) => {
+      reject(err);
+    });
+
+    req.end();
+  });
+}
+
 async function postPromptToBridge(
   bridge: BridgeInfo,
   text: string,
@@ -175,6 +210,39 @@ export async function sendPromptViaSession(
 
       outputChannel.appendLine(
         `[SessionBridge] Failed to send prompt via ${bridge.socketPath}: ${socketErr.message}`,
+      );
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Re-scan and probe discovered CLI bridges to verify whether at least
+ * one active and reachable session is available for prompt injection.
+ */
+export async function refreshBridgeConnection(
+  outputChannel: vscode.OutputChannel,
+): Promise<boolean> {
+  const bridges = await findBridgesForWorkspace();
+  if (bridges.length === 0) {
+    return false;
+  }
+
+  for (const bridge of bridges) {
+    try {
+      const healthy = await probeBridgeHealth(bridge);
+      if (healthy) {
+        return true;
+      }
+    } catch (err) {
+      const socketErr = err as NodeJS.ErrnoException;
+      if (isStaleSocketError(socketErr)) {
+        await fs.unlink(bridge.discoveryFile).catch(() => {});
+      }
+
+      outputChannel.appendLine(
+        `[SessionBridge] Failed to probe bridge ${bridge.socketPath}: ${socketErr.message}`,
       );
     }
   }

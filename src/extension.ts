@@ -8,6 +8,7 @@ import {
   promptForBridgeInstallOrUpdate,
   createUpdateBridgeCommand,
   createUninstallBridgeCommand,
+  createRefreshBridgeConnectionCommand,
 } from "./commands/bridgeExtension";
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -36,6 +37,10 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "send-to-copilot-cli.uninstallBridge",
       createUninstallBridgeCommand(outputChannel),
+    ),
+    vscode.commands.registerCommand(
+      "send-to-copilot-cli.refreshConnection",
+      createRefreshBridgeConnectionCommand(outputChannel),
     ),
   );
 

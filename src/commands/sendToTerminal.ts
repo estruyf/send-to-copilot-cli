@@ -1,5 +1,8 @@
 import * as vscode from "vscode";
-import { sendPromptViaSession } from "../utils/sessionBridge";
+import {
+  refreshBridgeConnection,
+  sendPromptViaSession,
+} from "../utils/sessionBridge";
 
 export function createSendSelectionToTerminal(
   outputChannel: vscode.OutputChannel,
@@ -56,7 +59,27 @@ async function sendText(
     return;
   }
 
-  vscode.window.showWarningMessage(
+  const reconnected = await refreshBridgeConnection(outputChannel);
+  if (reconnected) {
+    const retried = await sendPromptViaSession(text, outputChannel);
+    if (retried) {
+      return;
+    }
+  }
+
+  const action = await vscode.window.showWarningMessage(
     "No active Copilot CLI session found. Install the bridge extension and start a CLI session.",
+    "Refresh Connection",
+    "Install Bridge",
   );
+
+  if (action === "Refresh Connection") {
+    await vscode.commands.executeCommand(
+      "send-to-copilot-cli.refreshConnection",
+    );
+  }
+
+  if (action === "Install Bridge") {
+    await vscode.commands.executeCommand("send-to-copilot-cli.installBridge");
+  }
 }

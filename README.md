@@ -65,6 +65,7 @@ Open a terminal and start the Copilot CLI (`copilot`). The bridge extension load
 | **Install Bridge Extension** | Install the CLI bridge (global or workspace) |
 | **Update Bridge Extension** | Update installed bridges to the latest version |
 | **Uninstall Bridge Extension** | Remove the CLI bridge from a chosen location |
+| **Refresh Connection** | Re-scan and reconnect to an active Copilot CLI bridge session |
 
 All commands are available in the Command Palette under the `Send to Copilot CLI:` prefix and in the editor right-click context menu.
 

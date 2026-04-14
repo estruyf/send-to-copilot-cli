@@ -3,6 +3,7 @@ import * as fs from "fs/promises";
 import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
+import { refreshBridgeConnection } from "../utils/sessionBridge";
 
 const EXTENSION_NAME = "vscode-prompt-bridge";
 const EXTENSION_FILE = "extension.mjs";
@@ -75,6 +76,11 @@ const session = await joinSession({
 });
 
 const server = createServer((req, res) => {
+  if (req.method === "GET" && req.url === "/health") {
+    res.writeHead(200).end(JSON.stringify({ ok: true }));
+    return;
+  }
+
   if (req.method !== "POST" || req.url !== "/send") {
     res.writeHead(404).end();
     return;
@@ -408,5 +414,38 @@ export function createUninstallBridgeCommand(
     }
 
     vscode.window.showInformationMessage("CLI bridge extension uninstalled.");
+  };
+}
+
+export function createRefreshBridgeConnectionCommand(
+  outputChannel: vscode.OutputChannel,
+) {
+  return async (): Promise<void> => {
+    const connected = await refreshBridgeConnection(outputChannel);
+    if (connected) {
+      vscode.window.showInformationMessage(
+        "Connected to an active Copilot CLI bridge session.",
+      );
+      return;
+    }
+
+    const state = await getBridgeInstallationState();
+    if (state.installedCount === 0) {
+      const picked = await vscode.window.showWarningMessage(
+        "No Copilot CLI bridge extension installation found.",
+        "Install Bridge",
+      );
+
+      if (picked === "Install Bridge") {
+        await vscode.commands.executeCommand(
+          "send-to-copilot-cli.installBridge",
+        );
+      }
+      return;
+    }
+
+    vscode.window.showWarningMessage(
+      "No active Copilot CLI bridge session found. Start or restart your Copilot CLI session, then try refresh again.",
+    );
   };
 }

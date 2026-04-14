@@ -75,6 +75,10 @@
       {
         "command": "send-to-copilot-cli.uninstallBridge",
         "title": "Send to Copilot CLI: Uninstall Bridge Extension"
+      },
+      {
+        "command": "send-to-copilot-cli.refreshConnection",
+        "title": "Send to Copilot CLI: Refresh Connection"
       }
     ],
     "submenus": [
@@ -98,6 +102,10 @@
         {
           "command": "send-to-copilot-cli.sendFileContent",
           "group": "1_send@2"
+        },
+        {
+          "command": "send-to-copilot-cli.refreshConnection",
+          "group": "2_manage@1"
         }
       ]
     }
